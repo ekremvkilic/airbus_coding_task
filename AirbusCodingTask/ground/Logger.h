@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-typedef struct tm Timestamp;
-
 typedef enum
 {
     LOG_DEBUG,
@@ -40,7 +38,7 @@ void Log(const LogLevel level, const char* message)
 void LogTC(const LogLevel level, const Telecommand* const telecommand)
 {
     time_t t = time(NULL);
-    Timestamp *tm = localtime(&t);
+    struct tm *tm = localtime(&t);
     printf("%d-%02d-%02d %02d:%02d:%02d ", tm->tm_year+1900,
                                            tm->tm_mon+1,
                                            tm->tm_mday,
@@ -73,7 +71,7 @@ void LogTC(const LogLevel level, const Telecommand* const telecommand)
 void LogTM(const LogLevel level, const Telemetry* const telemetry)
 {
     time_t t = time(NULL);
-    Timestamp *tm = localtime(&t);
+    struct tm *tm = localtime(&t);
     printf("%d-%02d-%02d %02d:%02d:%02d ", tm->tm_year+1900,
                                            tm->tm_mon+1,
                                            tm->tm_mday,

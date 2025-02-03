@@ -1,30 +1,41 @@
 #include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Decoders.h"
 #include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Encoders.h"
 #include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Medium.h"
+#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Socket.h"
 #include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/ground/Logger.h"
 #include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/ground/UserInput.h"
 
 int main()
 {
     Telecommand active_message;
-    FILE* tc_message_medium = InitMedium("mediums/tc_medium", "wb");
-    FILE* tm_message_medium = InitMedium("mediums/tm_medium", "rb");
-
     uint8_t buffer[MAX_MSG_LEN+1U];
     ClearMsgBuffer(buffer);
 
-    fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
+    int send_socket = 0;
+    int send_descriptor = 0;
+    int receive_descriptor = 0;
+    bool send_socket_created = CreateSendSocket(&send_descriptor, &send_socket, 8080U);
+    bool receive_socket_created = CreateReceiveSocket(&receive_descriptor, 8000U, "127.0.0.8");
 
-    while (true)
+    // fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
+    active_message.command_id = 103;
+    active_message.payload_operation.operation_code = 1;
+    active_message.payload_operation.operation_code = 1;
+    new_message_ready = true;
+
+    printf("send_fd: %d\nrecv_fd: %d\nsocket: %d\n", send_descriptor, receive_descriptor, send_socket);
+
+    while (send_socket_created && receive_socket_created)
     {
-        GetUserInput(&active_message);
-        if (terminate || (tm_message_medium == NULL) || (tc_message_medium == NULL))
+        // GetUserInput(&active_message);
+        if (terminate)
         {
             break;
         }
 
         if (new_message_ready)
         {
+            printf("New message is ready!\n");
             ByteSpan tc_packet = {buffer, CalculateBufferSize(&active_message)};
             if (!TelecommandEncoder(&active_message, tc_packet))
             {
@@ -32,7 +43,8 @@ int main()
             }
             else
             {
-                size_t count = fwrite(tc_packet.data, tc_packet.size, 1U, tc_message_medium);
+                ssize_t count = send(send_descriptor, tc_packet.data, tc_packet.size, 0);
+                printf("count: %ld\n", count);
                 if (count == 0U)
                 {
                     Log(LOG_WARN, "Could not write to Telecommand medium!");
@@ -46,7 +58,7 @@ int main()
             active_message.command_id = 0U;
         }
 
-        fread(buffer, sizeof(buffer), 1U, tm_message_medium);
+        ssize_t read_bytes = read(receive_descriptor, buffer, MAX_MSG_LEN);
         ByteSpan received_packet = {buffer, GetBufferSize(buffer)};
         Telemetry received_tm;
         if (received_packet.size != 0)
@@ -64,14 +76,9 @@ int main()
         }
     }
 
-    if (tm_message_medium != NULL)
-    {
-        fclose(tm_message_medium);
-    }
-    if (tc_message_medium != NULL)
-    {
-        fclose(tc_message_medium);
-    }
+    close(send_socket);
+    close(send_descriptor);
+    close(receive_descriptor);
 
     return 0;
 }

@@ -19,7 +19,10 @@ void GetUserInput(Telecommand* const active_message)
     usleep(10000);
     sscanf(input_buffer, "%hhu", &active_message->command_id);
 
-    if (!((active_message->command_id == 102) || (active_message->command_id == 103)))
+    if (!((active_message->command_id == TC_SystemCheck)
+       || (active_message->command_id == TC_AdjustOrbitalPath)
+       || (active_message->command_id == TC_PayloadOperation)
+       || (active_message->command_id == 100)))
     {
         ClearInputBuffer(input_buffer);
         __fpurge(stdin);
