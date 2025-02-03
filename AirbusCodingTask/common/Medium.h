@@ -1,7 +1,7 @@
 #ifndef AIRBUS_CODING_TASK_COMMON_MEDIUM_H
 #define AIRBUS_CODING_TASK_COMMON_MEDIUM_H
 
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/DataStructures.h"
+#include "DataStructures.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -52,7 +52,7 @@ size_t CalculateBufferSize(const Telecommand* const command)
     switch (command->command_id)
     {
         case TC_SystemCheck:
-            return sizeof(command->command_id)+sizeof(SystemCheckTC)+1U;
+            return sizeof(command->command_id)+1U;
         case TC_AdjustOrbitalPath:
             return sizeof(command->command_id)+sizeof(AdjustOrbitalPathTC)+1U;
         case TC_PayloadOperation:

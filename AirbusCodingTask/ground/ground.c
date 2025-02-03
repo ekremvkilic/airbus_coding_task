@@ -1,78 +1,80 @@
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Decoders.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Encoders.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Medium.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Socket.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/ground/Logger.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/ground/UserInput.h"
+#include "../common/Decoders.h"
+#include "../common/Encoders.h"
+#include "../common/Medium.h"
+#include "../common/Socket.h"
+#include "Logger.h"
+#include "UserInput.h"
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 int main()
 {
     Telecommand active_message;
-    uint8_t buffer[MAX_MSG_LEN+1U];
-    ClearMsgBuffer(buffer);
+    uint8_t msg_buffer[MAX_MSG_LEN+1U];
+    ClearMsgBuffer(msg_buffer);
 
     int send_socket = 0;
     int send_descriptor = 0;
     int receive_descriptor = 0;
-    bool send_socket_created = CreateSendSocket(&send_descriptor, &send_socket, 8080U);
-    bool receive_socket_created = CreateReceiveSocket(&receive_descriptor, 8000U, "127.0.0.8");
+    bool send_socket_created = CreateSendSocket(&send_descriptor, &send_socket, 8000U);
+    bool receive_socket_created = CreateReceiveSocket(&receive_descriptor, 8080U, "127.0.0.1");
 
-    // fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
-    active_message.command_id = 103;
-    active_message.payload_operation.operation_code = 1;
-    active_message.payload_operation.operation_code = 1;
-    new_message_ready = true;
-
-    printf("send_fd: %d\nrecv_fd: %d\nsocket: %d\n", send_descriptor, receive_descriptor, send_socket);
+    fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
+    fcntl(receive_descriptor, F_SETFL, O_NONBLOCK);
 
     while (send_socket_created && receive_socket_created)
     {
-        // GetUserInput(&active_message);
-        if (terminate)
+        if (GetUserInput(&active_message))
         {
             break;
         }
 
         if (new_message_ready)
         {
-            printf("New message is ready!\n");
-            ByteSpan tc_packet = {buffer, CalculateBufferSize(&active_message)};
+            Log(LOG_DEBUG, "User requested new message to send.\n");
+
+            ByteSpan tc_packet = {msg_buffer, CalculateBufferSize(&active_message)};
             if (!TelecommandEncoder(&active_message, tc_packet))
             {
-                Log(LOG_WARN, "The telecommand could not be encoded!");
+                Log(LOG_WARN, "The telecommand could not be encoded!\n");
             }
             else
             {
-                ssize_t count = send(send_descriptor, tc_packet.data, tc_packet.size, 0);
-                printf("count: %ld\n", count);
+                ssize_t count = send(send_socket, tc_packet.data, tc_packet.size, 0);
                 if (count == 0U)
                 {
-                    Log(LOG_WARN, "Could not write to Telecommand medium!");
+                    Log(LOG_WARN, "Could not send the message!\n");
                 }
 
                 LogTC(LOG_INFO, &active_message);
             }
 
             new_message_ready = false;
-            ClearMsgBuffer(buffer);
+            ClearMsgBuffer(msg_buffer);
             active_message.command_id = 0U;
         }
 
-        ssize_t read_bytes = read(receive_descriptor, buffer, MAX_MSG_LEN);
-        ByteSpan received_packet = {buffer, GetBufferSize(buffer)};
+        read(receive_descriptor, msg_buffer, MAX_MSG_LEN);
+        ByteSpan received_packet = {msg_buffer, GetBufferSize(msg_buffer)};
         Telemetry received_tm;
         if (received_packet.size != 0)
         {
+            Log(LOG_DEBUG, "New message received from the satellite!");
+
             if (TelemetryDecoder(received_packet, &received_tm))
             {
                 LogTM(LOG_INFO, &received_tm);
             }
             else
             {
-                Log(LOG_WARN, "Corrupted Telemetry Received!");
+                Log(LOG_WARN, "Corrupted Telemetry Received!\n");
             }
 
-            ClearMsgBuffer(buffer);
+            ClearMsgBuffer(msg_buffer);
         }
     }
 

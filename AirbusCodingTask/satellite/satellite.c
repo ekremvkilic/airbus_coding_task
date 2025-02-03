@@ -1,57 +1,63 @@
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/satellite/ExecuteCommand.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/satellite/PrepareTelemetry.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/satellite/MessageContainer.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/satellite/Scheduler.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/satellite/State.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/ByteSpan.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Decoders.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Medium.h"
+#include "ExecuteCommand.h"
+#include "PrepareTelemetry.h"
+#include "MessageContainer.h"
+#include "Scheduler.h"
+#include "State.h"
+#include "UserInput.h"
+#include "../common/ByteSpan.h"
+#include "../common/Decoders.h"
+#include "../common/Medium.h"
+#include "../common/Socket.h"
 #include <fcntl.h>
 #include <stdio_ext.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 int main()
 {
-    printf("Simulation of Satellite on the Orbit.\nPress q or Q to exit: ");
-
     MessageContainer pending_messages;
     SatelliteState state;
     
     InitMsgContainer(&pending_messages);
     InitState(&state);
-    FILE* tm_message_medium = InitMedium("mediums/tm_medium", "wb");
-    FILE* tc_message_medium = InitMedium("mediums/tc_medium", "rb");
 
     uint8_t msg_buffer[MAX_MSG_LEN+1U];
     ClearMsgBuffer(msg_buffer);
 
+    int send_socket = 0;
+    int send_descriptor = 0;
+    int receive_descriptor = 0;
+    bool receive_socket_created = CreateReceiveSocket(&receive_descriptor, 8000U, "127.0.0.8");
+    bool send_socket_created = CreateSendSocket(&send_descriptor, &send_socket, 8080U);
+
     char input_buffer[INPUT_BUFF_LEN];
     ClearInputBuffer(input_buffer);
-    fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
 
-    char key = 0;
-    while (true)
+    fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
+    fcntl(receive_descriptor, F_SETFL, O_NONBLOCK);
+
+    while (send_socket_created && receive_socket_created)
     {
+        if (!GetUserInput(input_buffer))
         {
-            read(0, &input_buffer, sizeof(input_buffer));
-            usleep(10000);
-            sscanf(input_buffer, "%c", &key);
-            if ((key == 'q') || (key == 'Q') || (tm_message_medium == NULL) || (tc_message_medium == NULL))
-            {
-                break;
-            }
-            ClearInputBuffer(input_buffer);
-            __fpurge(stdin);
+            break;
         }
 
-        fread(&msg_buffer, sizeof(msg_buffer), 1U, tc_message_medium);
+        read(receive_descriptor, msg_buffer, MAX_MSG_LEN);
         ByteSpan received_packet = {msg_buffer, GetBufferSize(msg_buffer)};
 
         Telecommand received_tc;
         if (received_packet.size != 0)
         {
+            printf("Telecommand is received!\n");
             if (TelecommandDecoder(received_packet, &received_tc))
             {
+                printf("Telecommand is executed!\n");
                 ExecuteCommand(&received_tc, &state);
             }
             else
@@ -65,26 +71,22 @@ int main()
         Telemetry* pending_tm = NULL;
         if (received_packet.size != 0)
         {
+            printf("Telemetry is prepared!\n");
             PrepareTelemetry(&received_tc, &pending_tm, &state);
 
             ScheduleNewMessage(&pending_messages, pending_tm);
         }
 
-        TransmitNextMessage(&pending_messages, tm_message_medium);
+        TransmitNextMessage(&pending_messages, &send_socket);
 
         ClearMsgBuffer(msg_buffer);
     }
 
     ClearContainer(&pending_messages);
 
-    if (tm_message_medium != NULL)
-    {
-        fclose(tm_message_medium);
-    }
-    if (tc_message_medium != NULL)
-    {
-        fclose(tc_message_medium);
-    }
+    close(send_socket);
+    close(send_descriptor);
+    close(receive_descriptor);
 
     return 0;
 }

@@ -1,21 +1,21 @@
-#ifndef AIRBUS_CODING_TASK_SATELLITE_USER_INPUT_H
-#define AIRBUS_CODING_TASK_SATELLITE_USER_INPUT_H
+#ifndef AIRBUS_CODING_TASK_GROUND_USER_INPUT_H
+#define AIRBUS_CODING_TASK_GROUND_USER_INPUT_H
 
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/DataStructures.h"
+#include "../common/DataStructures.h"
+#include "Logger.h"
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdio_ext.h>
 
-bool terminate = false;
 bool new_message_ready = false;
 
-void GetUserInput(Telecommand* const active_message)
+bool GetUserInput(Telecommand* const active_message)
 {
     char input_buffer[INPUT_BUFF_LEN];
     ClearInputBuffer(input_buffer);
 
-    read(0, &input_buffer, sizeof(input_buffer));
+    ssize_t read_bytes = read(0, &input_buffer, sizeof(input_buffer));
     usleep(10000);
     sscanf(input_buffer, "%hhu", &active_message->command_id);
 
@@ -49,9 +49,16 @@ void GetUserInput(Telecommand* const active_message)
             new_message_ready = true;
             break;
         case 100:
-            terminate = true;
+            return true;
             break;
+        default:
+            if (read_bytes > 0U)
+            {
+                Log(LOG_WARN, "Please enter a valid input!\n");
+            }
     }
+
+    return false;
 }
 
-#endif // AIRBUS_CODING_TASK_SATELLITE_USER_INPUT_H
+#endif // AIRBUS_CODING_TASK_GROUND_USER_INPUT_H

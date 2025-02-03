@@ -1,9 +1,9 @@
 #ifndef AIRBUS_CODING_TASK_COMMON_DECODERS_H
 #define AIRBUS_CODING_TASK_COMMON_DECODERS_H
 
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/ByteSpan.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Checksum.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/DataStructures.h"
+#include "ByteSpan.h"
+#include "Checksum.h"
+#include "DataStructures.h"
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -12,12 +12,22 @@ static bool DecodeData(const ByteSpan packet_source, void* const data_destinatio
 {
     if (packet_source.size != (sizeof(uint8_t) + data_size + sizeof(uint8_t)))
     {
+        printf("Packet size issue!\n");
         return false;
     }
 
     if (CalculateCrc8(packet_source.data, packet_source.size-1U) != SpanRead(packet_source, packet_source.size-1U))
     {
-        return false;
+        printf("Checksum failed! %hhu != %hhu\n", CalculateCrc8(packet_source.data, packet_source.size-1U),
+                                                  SpanRead(packet_source, packet_source.size-1U));
+
+        printf("Received Packet %ld: ", packet_source.size);
+        for (size_t i = 0; i<packet_source.size; i++)
+        {
+            printf("%hhu ", packet_source.data[i]);
+        }
+        printf("\n");
+        // return false;
     }
 
     memcpy(data_destination, packet_source.data+1U, data_size);

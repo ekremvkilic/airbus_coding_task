@@ -1,9 +1,9 @@
 #ifndef AIRBUS_CODING_TASK_COMMON_ENCODERS_H
 #define AIRBUS_CODING_TASK_COMMON_ENCODERS_H
 
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/ByteSpan.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Checksum.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/DataStructures.h"
+#include "ByteSpan.h"
+#include "Checksum.h"
+#include "DataStructures.h"
 #include <stdbool.h>
 #include <string.h>
 

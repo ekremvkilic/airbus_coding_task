@@ -1,8 +1,8 @@
 #ifndef AIRBUS_CODING_TASK_SATELLITE_PREPARE_TELEMETRY_H
 #define AIRBUS_CODING_TASK_SATELLITE_PREPARE_TELEMETRY_H
 
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/DataStructures.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/satellite/State.h"
+#include "../common/DataStructures.h"
+#include "State.h"
 
 void PrepareTelemetry(const Telecommand* const command, Telemetry** message, const SatelliteState* const state)
 {
@@ -10,7 +10,7 @@ void PrepareTelemetry(const Telecommand* const command, Telemetry** message, con
 
     if (*message == NULL)
     {
-        printf("Memory allocation failed!");
+        printf("Memory allocation for a new telemetry message is failed!\n");
         return;
     }
 
@@ -54,11 +54,11 @@ void PrepareTelemetry(const Telecommand* const command, Telemetry** message, con
                     (*message)->payload_data.measurements[2U] = 0.0F;
                     break;
                 default:
-                    printf("Wrong Payload Id. This should not have happened!");
+                    printf("Wrong Payload Id. This should not have happened!\n");
             }
             break;
         default:
-            printf("Wrong Telecommand Id. This should not have happened!");
+            printf("Wrong Telecommand Id. This should not have happened!\n");
     }
 }
 

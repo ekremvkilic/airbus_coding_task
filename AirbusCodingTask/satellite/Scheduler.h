@@ -1,15 +1,19 @@
 #ifndef AIRBUS_CODING_TASK_SATELLITE_SCHEDULER_H
 #define AIRBUS_CODING_TASK_SATELLITE_SCHEDULER_H
 
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/ByteSpan.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/DataStructures.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Encoders.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Time.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/Medium.h"
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/satellite/MessageContainer.h"
+#include "../common/ByteSpan.h"
+#include "../common/DataStructures.h"
+#include "../common/Encoders.h"
+#include "../common/Time.h"
+#include "../common/Medium.h"
+#include "MessageContainer.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 inline static uint8_t GetRefCount(const uint8_t status_code)
 {
@@ -87,7 +91,7 @@ void ScheduleNewMessage(MessageContainer* const container, Telemetry* const tm_d
     unique_message_id++;
 }
 
-void TransmitNextMessage(MessageContainer* const container, FILE* const medium)
+void TransmitNextMessage(MessageContainer* const container, int* send_socket)
 {
     Timestamp now;
     {
@@ -101,7 +105,7 @@ void TransmitNextMessage(MessageContainer* const container, FILE* const medium)
         now.tm_sec  = tm->tm_sec;
     }
 
-    if (IsEarlier(&container->messages[0U].timestamp, &now))
+    if ((container->size > 0U) && IsEarlier(&container->messages[0U].timestamp, &now))
     {
         uint8_t buffer[MAX_MSG_LEN];
         ClearMsgBuffer(buffer);
@@ -112,11 +116,13 @@ void TransmitNextMessage(MessageContainer* const container, FILE* const medium)
             return;
         }
 
-        size_t count = fwrite(tm_packet.data, tm_packet.size, 1U, medium);
+        ssize_t count = send(*send_socket, tm_packet.data, tm_packet.size, 0);
         if (count == 0U)
         {
             printf("Could not write to Telecommand medium!\n");
         }
+
+        printf("A telemetry message is transmitted...\n");
 
         const uint8_t transmitted_msg_id = container->messages[0U].unique_id;
         bool freed = false;
@@ -126,7 +132,7 @@ void TransmitNextMessage(MessageContainer* const container, FILE* const medium)
             freed = true;
         }
 
-        for (size_t i = 0; i<container->size-1U; i++)
+        for (size_t i = 0; i<container->size; i++)
         {
             container->messages[i] = container->messages[i+1];
 

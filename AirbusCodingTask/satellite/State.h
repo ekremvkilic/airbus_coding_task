@@ -1,7 +1,7 @@
 #ifndef AIRBUS_CODING_TASK_SATELLITE_STATE_H
 #define AIRBUS_CODING_TASK_SATELLITE_STATE_H
 
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/VelocityVector.h"
+#include "../common/VelocityVector.h"
 #include <time.h>
 #include <stdbool.h>
 #include <stdint.h>

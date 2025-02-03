@@ -1,7 +1,7 @@
 #ifndef AIRBUS_CODING_TASK_GROUND_LOGGER_H
 #define AIRBUS_CODING_TASK_GROUND_LOGGER_H
 
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/DataStructures.h"
+#include "../common/DataStructures.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -32,19 +32,22 @@ static const char* kLogColors[LOG_LEN_N_RST+1U] = {
 
 void Log(const LogLevel level, const char* message)
 {
-    printf("[%s%s%s]: %s", kLogColors[level], kLogTypes[level], kLogColors[LOG_LEN_N_RST], message);
+    printf("[%s%s%s]: %s\n", kLogColors[level], kLogTypes[level], kLogColors[LOG_LEN_N_RST], message);
 }
 
 void LogTC(const LogLevel level, const Telecommand* const telecommand)
 {
     time_t t = time(NULL);
     struct tm *tm = localtime(&t);
-    printf("%d-%02d-%02d %02d:%02d:%02d ", tm->tm_year+1900,
-                                           tm->tm_mon+1,
-                                           tm->tm_mday,
-                                           tm->tm_hour,
-                                           tm->tm_min,
-                                           tm->tm_sec);
+    printf("[%s%s%s]: %d-%02d-%02d %02d:%02d:%02d ", kLogColors[level],
+                                                     kLogTypes[level],
+                                                     kLogColors[LOG_LEN_N_RST],
+                                                     tm->tm_year+1900,
+                                                     tm->tm_mon+1,
+                                                     tm->tm_mday,
+                                                     tm->tm_hour,
+                                                     tm->tm_min,
+                                                     tm->tm_sec);
     printf("TC_%d ", telecommand->command_id);
 
     switch(telecommand->command_id)
@@ -64,7 +67,7 @@ void LogTC(const LogLevel level, const Telecommand* const telecommand)
                 telecommand->payload_operation.payload_id);
             break;
         default:
-            printf("Invalid Telecommand Id while logging!");
+            printf("Invalid Telecommand Id while logging!\n");
     }
 }
 
@@ -72,25 +75,28 @@ void LogTM(const LogLevel level, const Telemetry* const telemetry)
 {
     time_t t = time(NULL);
     struct tm *tm = localtime(&t);
-    printf("%d-%02d-%02d %02d:%02d:%02d ", tm->tm_year+1900,
-                                           tm->tm_mon+1,
-                                           tm->tm_mday,
-                                           tm->tm_hour,
-                                           tm->tm_min,
-                                           tm->tm_sec);
+    printf("[%s%s%s]: %d-%02d-%02d %02d:%02d:%02d ", kLogColors[level],
+                                                     kLogTypes[level],
+                                                     kLogColors[LOG_LEN_N_RST],
+                                                     tm->tm_year+1900,
+                                                     tm->tm_mon+1,
+                                                     tm->tm_mday,
+                                                     tm->tm_hour,
+                                                     tm->tm_min,
+                                                     tm->tm_sec);
     printf("TM_%d ", telemetry->status_code);
 
     switch(telemetry->status_code)
     {
         case TM_SystemHealthStatus:
-            printf("System Health Status received from the satellite."
+            printf("System Health Status received from the satellite. "
                    "CPU: %.3f%%, Memory: %.3f%%, Battery: %.3f%%\n",
                 telemetry->system_health_status.cpu_usage,
                 telemetry->system_health_status.memory_usage,
                 telemetry->system_health_status.battery_level);
             break;
         case TM_OrbitalDataReport:
-            printf("Orbital Data Report received from the satellite."
+            printf("Orbital Data Report received from the satellite. "
                    "Alt: %.3f, Vx: %.3f, Vy: %.3f, Vz: %.3f\n",
                 telemetry->orbital_data_report.current_altitude,
                 telemetry->orbital_data_report.velocity_vector.x,
@@ -98,7 +104,7 @@ void LogTM(const LogLevel level, const Telemetry* const telemetry)
                 telemetry->orbital_data_report.velocity_vector.z);
             break;
         case TM_PayloadData:
-            printf("Payload Data received from the satellite."
+            printf("Payload Data received from the satellite. "
                    "PayloadId: %d, OpStatus: %d, Measurements 0:%.3f, 1:%.3f, 2:%.3f\n",
                 telemetry->payload_data.payload_id,
                 telemetry->payload_data.operational_status,
@@ -107,7 +113,7 @@ void LogTM(const LogLevel level, const Telemetry* const telemetry)
                 telemetry->payload_data.measurements[2U]);
             break;
         default:
-            printf("Invalid Telemetry status code while logging!");
+            printf("Invalid Telemetry status code while logging!\n");
     }
 }
 

@@ -1,7 +1,7 @@
 #ifndef AIRBUS_CODING_TASK_COMMON_DATA_STRUCTURES_H
 #define AIRBUS_CODING_TASK_COMMON_DATA_STRUCTURES_H
 
-#include "/home/ekkilic/Documents/TestWorkspace/CWorkspace/AirbusCodingTask/common/VelocityVector.h"
+#include "VelocityVector.h"
 #include <stdint.h>
 
 typedef struct
